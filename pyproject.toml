@@ -1,0 +1,35 @@
+[project]
+name = "go2arm-mjlab"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Chaim Chen", email = "chaimchen1104@gamil.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "mjlab>=1.3.0",
+    "scipy>=1.17.1",
+    "torch==2.7.1",
+    "torchvision==0.22.1",
+    "warp-lang==1.12.0",
+]
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu128" }
+torchvision = { index = "pytorch-cu128" }
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+[project.scripts]
+go2arm-mjlab = "go2arm_mjlab:main"
+go2arm-list-envs = "go2arm_mjlab.scripts.list_envs:main"
+go2arm-train = "go2arm_mjlab.scripts.train:main"
+go2arm-play = "go2arm_mjlab.scripts.play:main"
+
+[build-system]
+requires = ["uv_build>=0.11.6,<0.12.0"]
+build-backend = "uv_build"
