@@ -399,6 +399,48 @@ Important compatibility note:
   `baseline_arm_ee_pose` configuration.
 - Start a new training run for the quaternion command version.
 
+## 2026-05-19: Add GitHub README Pages
+
+### Problem
+
+The repository README was empty, so the GitHub project page did not explain the
+purpose of the project, how to install it, how to train, how to play
+checkpoints, or where to find logs and metrics.
+
+### Idea
+
+Use English as the default GitHub landing page and provide a separate Chinese
+README. Keep the two files linked to each other at the top.
+
+### Changes
+
+Files changed:
+
+- `README.md`
+- `README_CN.md`
+- `TRAINING_NOTES.md`
+
+Main changes:
+
+- Added an English project overview in `README.md`.
+- Added a Chinese project overview in `README_CN.md`.
+- Documented:
+  - task name `Go2Arm-Flat`
+  - installation with `uv`
+  - training commands
+  - resume training command pattern
+  - play and video commands
+  - TensorBoard command
+  - end-effector position / orientation metrics
+  - ONNX export behavior
+  - joint count and `joint8` mimic joint note
+  - ignored logs / checkpoints / ONNX / zip files
+
+### Test Result
+
+- Documentation files were added successfully.
+- No code behavior changed.
+
 ## 2026-05-19: GitHub Repository Preparation
 
 ### Problem
