@@ -95,9 +95,9 @@ def go2arm_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
       func=mdp.generated_commands,
       params={"command_name": "base_velocity"},
     ),
-    "ee_position_commands": ObservationTermCfg(
+    "ee_pose_commands": ObservationTermCfg(
       func=mdp.generated_commands,
-      params={"command_name": "arm_ee_position"},
+      params={"command_name": "arm_ee_pose"},
     ),
     "projected_gravity": ObservationTermCfg(
       func=mdp.projected_gravity,
@@ -182,13 +182,16 @@ def go2arm_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
         heading=None,
       ),
     ),
-    "arm_ee_position": mdp.UniformEndEffectorCommandCfg(
+    "arm_ee_pose": mdp.UniformEndEffectorPoseCommandCfg(
       entity_name="robot",
       resampling_time_range=(2.0, 4.0),
-      ranges=mdp.UniformEndEffectorCommandCfg.Ranges(
+      ranges=mdp.UniformEndEffectorPoseCommandCfg.Ranges(
         x=(0.20, 0.45),
         y=(-0.25, 0.25),
         z=(0.15, 0.45),
+        roll=(-0.8, 0.8),
+        pitch=(-0.8, 0.8),
+        yaw=(-1.57, 1.57),
       ),
     ),
   }
@@ -273,8 +276,17 @@ def go2arm_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
       func=mdp.track_end_effector_position,
       weight=1.0,
       params={
-        "command_name": "arm_ee_position",
+        "command_name": "arm_ee_pose",
         "std": math.sqrt(0.05),
+        "asset_cfg": SceneEntityCfg("robot", site_names=("end_effector",)),
+      },
+    ),
+    "track_ee_orientation": RewardTermCfg(
+      func=mdp.track_end_effector_orientation,
+      weight=0.5,
+      params={
+        "command_name": "arm_ee_pose",
+        "std": math.sqrt(0.25),
         "asset_cfg": SceneEntityCfg("robot", site_names=("end_effector",)),
       },
     ),
@@ -365,7 +377,119 @@ def go2arm_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     rewards=rewards,
     terminations=terminations,
     curriculum=curriculum,
-    metrics={"mean_action_acc": MetricsTermCfg(func=mdp.mean_action_acc)},
+    metrics={
+      "mean_action_acc": MetricsTermCfg(func=mdp.mean_action_acc),
+      "ee_pos_x": MetricsTermCfg(
+        func=mdp.site_position_axis,
+        params={"axis": 0, "asset_cfg": SceneEntityCfg("robot", site_names=("end_effector",))},
+      ),
+      "ee_pos_y": MetricsTermCfg(
+        func=mdp.site_position_axis,
+        params={"axis": 1, "asset_cfg": SceneEntityCfg("robot", site_names=("end_effector",))},
+      ),
+      "ee_pos_z": MetricsTermCfg(
+        func=mdp.site_position_axis,
+        params={"axis": 2, "asset_cfg": SceneEntityCfg("robot", site_names=("end_effector",))},
+      ),
+      "ee_target_x": MetricsTermCfg(
+        func=mdp.site_target_position_axis,
+        params={
+          "axis": 0,
+          "command_name": "arm_ee_pose",
+          "asset_cfg": SceneEntityCfg("robot", site_names=("end_effector",)),
+        },
+      ),
+      "ee_target_y": MetricsTermCfg(
+        func=mdp.site_target_position_axis,
+        params={
+          "axis": 1,
+          "command_name": "arm_ee_pose",
+          "asset_cfg": SceneEntityCfg("robot", site_names=("end_effector",)),
+        },
+      ),
+      "ee_target_z": MetricsTermCfg(
+        func=mdp.site_target_position_axis,
+        params={
+          "axis": 2,
+          "command_name": "arm_ee_pose",
+          "asset_cfg": SceneEntityCfg("robot", site_names=("end_effector",)),
+        },
+      ),
+      "ee_pos_error": MetricsTermCfg(
+        func=mdp.site_position_error,
+        params={
+          "command_name": "arm_ee_pose",
+          "asset_cfg": SceneEntityCfg("robot", site_names=("end_effector",)),
+        },
+      ),
+      "ee_target_quat_w": MetricsTermCfg(
+        func=mdp.site_target_quat_axis,
+        params={
+          "axis": 0,
+          "command_name": "arm_ee_pose",
+          "asset_cfg": SceneEntityCfg("robot", site_names=("end_effector",)),
+        },
+      ),
+      "ee_target_quat_x": MetricsTermCfg(
+        func=mdp.site_target_quat_axis,
+        params={
+          "axis": 1,
+          "command_name": "arm_ee_pose",
+          "asset_cfg": SceneEntityCfg("robot", site_names=("end_effector",)),
+        },
+      ),
+      "ee_target_quat_y": MetricsTermCfg(
+        func=mdp.site_target_quat_axis,
+        params={
+          "axis": 2,
+          "command_name": "arm_ee_pose",
+          "asset_cfg": SceneEntityCfg("robot", site_names=("end_effector",)),
+        },
+      ),
+      "ee_target_quat_z": MetricsTermCfg(
+        func=mdp.site_target_quat_axis,
+        params={
+          "axis": 3,
+          "command_name": "arm_ee_pose",
+          "asset_cfg": SceneEntityCfg("robot", site_names=("end_effector",)),
+        },
+      ),
+      "ee_orientation_error": MetricsTermCfg(
+        func=mdp.site_orientation_error,
+        params={
+          "command_name": "arm_ee_pose",
+          "asset_cfg": SceneEntityCfg("robot", site_names=("end_effector",)),
+        },
+      ),
+      "ee_quat_w": MetricsTermCfg(
+        func=mdp.site_quat_axis,
+        params={"axis": 0, "asset_cfg": SceneEntityCfg("robot", site_names=("end_effector",))},
+      ),
+      "ee_quat_x": MetricsTermCfg(
+        func=mdp.site_quat_axis,
+        params={"axis": 1, "asset_cfg": SceneEntityCfg("robot", site_names=("end_effector",))},
+      ),
+      "ee_quat_y": MetricsTermCfg(
+        func=mdp.site_quat_axis,
+        params={"axis": 2, "asset_cfg": SceneEntityCfg("robot", site_names=("end_effector",))},
+      ),
+      "ee_quat_z": MetricsTermCfg(
+        func=mdp.site_quat_axis,
+        params={"axis": 3, "asset_cfg": SceneEntityCfg("robot", site_names=("end_effector",))},
+      ),
+      "ee_roll": MetricsTermCfg(
+        func=mdp.site_rpy_axis,
+        params={"axis": 0, "asset_cfg": SceneEntityCfg("robot", site_names=("end_effector",))},
+      ),
+      "ee_pitch": MetricsTermCfg(
+        func=mdp.site_rpy_axis,
+        params={"axis": 1, "asset_cfg": SceneEntityCfg("robot", site_names=("end_effector",))},
+      ),
+      "ee_yaw": MetricsTermCfg(
+        func=mdp.site_rpy_axis,
+        params={"axis": 2, "asset_cfg": SceneEntityCfg("robot", site_names=("end_effector",))},
+      ),
+    },
     viewer=ViewerConfig(
       origin_type=ViewerConfig.OriginType.ASSET_BODY,
       entity_name="robot",

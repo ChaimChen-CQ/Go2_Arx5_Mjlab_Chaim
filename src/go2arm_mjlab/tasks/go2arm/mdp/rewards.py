@@ -8,7 +8,7 @@ from mjlab.entity import Entity
 from mjlab.managers.reward_manager import RewardTermCfg
 from mjlab.managers.scene_entity_config import SceneEntityCfg
 from mjlab.sensor import BuiltinSensor, ContactSensor
-from mjlab.utils.lab_api.math import quat_apply, quat_apply_inverse
+from mjlab.utils.lab_api.math import quat_apply, quat_apply_inverse, quat_error_magnitude, quat_mul
 from mjlab.utils.lab_api.string import (
   resolve_matching_names_values,
 )
@@ -147,11 +147,27 @@ def track_end_effector_position(
 ) -> torch.Tensor:
   """Reward end-effector position tracking for a base-frame target command."""
   asset: Entity = env.scene[asset_cfg.name]
-  command_b = env.command_manager.get_command(command_name)
-  assert command_b is not None, f"Command '{command_name}' not found."
-  target_w = asset.data.root_link_pos_w + quat_apply(asset.data.root_link_quat_w, command_b)
+  command = env.command_manager.get_command(command_name)
+  assert command is not None, f"Command '{command_name}' not found."
+  target_w = asset.data.root_link_pos_w + quat_apply(asset.data.root_link_quat_w, command[:, :3])
   ee_pos_w = asset.data.site_pos_w[:, asset_cfg.site_ids, :].squeeze(1)
   error = torch.sum(torch.square(target_w - ee_pos_w), dim=1)
+  return torch.exp(-error / std**2)
+
+
+def track_end_effector_orientation(
+  env: ManagerBasedRlEnv,
+  std: float,
+  command_name: str,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> torch.Tensor:
+  """Reward end-effector orientation tracking for a base-frame quaternion command."""
+  asset: Entity = env.scene[asset_cfg.name]
+  command = env.command_manager.get_command(command_name)
+  assert command is not None, f"Command '{command_name}' not found."
+  target_quat_w = quat_mul(asset.data.root_link_quat_w, command[:, 3:7])
+  ee_quat_w = asset.data.site_quat_w[:, asset_cfg.site_ids, :].squeeze(1)
+  error = torch.square(quat_error_magnitude(target_quat_w, ee_quat_w))
   return torch.exp(-error / std**2)
 
 

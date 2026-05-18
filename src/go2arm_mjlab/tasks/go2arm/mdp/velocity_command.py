@@ -12,6 +12,7 @@ from mjlab.managers.command_manager import CommandTerm, CommandTermCfg
 from mjlab.utils.lab_api.math import (
   matrix_from_quat,
   quat_apply,
+  quat_from_euler_xyz,
   wrap_to_pi,
 )
 
@@ -282,12 +283,13 @@ class UniformVelocityCommandCfg(CommandTermCfg):
       )
 
 
-class UniformEndEffectorCommand(CommandTerm):
-  cfg: UniformEndEffectorCommandCfg
+class UniformEndEffectorPoseCommand(CommandTerm):
+  cfg: UniformEndEffectorPoseCommandCfg
 
-  def __init__(self, cfg: "UniformEndEffectorCommandCfg", env: ManagerBasedRlEnv):
+  def __init__(self, cfg: "UniformEndEffectorPoseCommandCfg", env: ManagerBasedRlEnv):
     super().__init__(cfg, env)
-    self.ee_command_b = torch.zeros(self.num_envs, 3, device=self.device)
+    self.ee_command_b = torch.zeros(self.num_envs, 7, device=self.device)
+    self.ee_command_b[:, 3] = 1.0
 
   @property
   def command(self) -> torch.Tensor:
@@ -301,13 +303,17 @@ class UniformEndEffectorCommand(CommandTerm):
     self.ee_command_b[env_ids, 0] = r.uniform_(*self.cfg.ranges.x)
     self.ee_command_b[env_ids, 1] = r.uniform_(*self.cfg.ranges.y)
     self.ee_command_b[env_ids, 2] = r.uniform_(*self.cfg.ranges.z)
+    roll = r.uniform_(*self.cfg.ranges.roll)
+    pitch = r.uniform_(*self.cfg.ranges.pitch)
+    yaw = r.uniform_(*self.cfg.ranges.yaw)
+    self.ee_command_b[env_ids, 3:7] = quat_from_euler_xyz(roll, pitch, yaw)
 
   def _update_command(self) -> None:
     pass
 
 
 @dataclass(kw_only=True)
-class UniformEndEffectorCommandCfg(CommandTermCfg):
+class UniformEndEffectorPoseCommandCfg(CommandTermCfg):
   entity_name: str
 
   @dataclass
@@ -315,8 +321,11 @@ class UniformEndEffectorCommandCfg(CommandTermCfg):
     x: tuple[float, float]
     y: tuple[float, float]
     z: tuple[float, float]
+    roll: tuple[float, float]
+    pitch: tuple[float, float]
+    yaw: tuple[float, float]
 
   ranges: Ranges
 
-  def build(self, env: ManagerBasedRlEnv) -> UniformEndEffectorCommand:
-    return UniformEndEffectorCommand(self, env)
+  def build(self, env: ManagerBasedRlEnv) -> UniformEndEffectorPoseCommand:
+    return UniformEndEffectorPoseCommand(self, env)
