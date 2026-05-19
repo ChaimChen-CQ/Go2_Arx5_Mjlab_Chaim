@@ -1,0 +1,113 @@
+# Sim-to-sim deployment config for the current Go2Arm position-only baseline.
+
+task_id: Go2Arm-Flat
+run_name: baseline_arm_ee_position
+checkpoint: logs/rsl_rl/go2arm_flat/2026-05-19_17-01-59_baseline_arm_ee_position_resume_1800/policy.onnx
+
+policy:
+  action_dim: 18
+  actor_observation_dim: 680
+  critic_observation_dim: 950
+  history_length: 10
+  action_clip: null
+  onnx_path: policies/go2arm_ee_position.onnx
+
+control:
+  decimation: 4
+  loop_dt: 0.02
+
+commands:
+  base_velocity:
+    dim: 3
+    fields: [lin_vel_x, lin_vel_y, ang_vel_z]
+    default: [0.0, 0.0, 0.0]
+    limits:
+      lin_vel_x: [-0.3, 0.8]
+      lin_vel_y: [-0.5, 0.5]
+      ang_vel_z: [-0.8, 0.8]
+    steps:
+      lin_vel_x: 0.05
+      lin_vel_y: 0.05
+      ang_vel_z: 0.05
+  arm_ee_position:
+    dim: 3
+    fields: [x, y, z]
+    default: [0.35, 0.0, 0.30]
+    limits:
+      x: [0.20, 0.55]
+      y: [-0.30, 0.30]
+      z: [0.15, 0.55]
+    steps:
+      x: 0.02
+      y: 0.02
+      z: 0.02
+
+gait:
+  period: 0.6
+
+sim:
+  mujoco_model: assets/go2arm/models/go2arm.xml
+  add_floor: true
+  physics_dt: 0.005
+  iterations: 10
+  ls_iterations: 20
+  disable_nativeccd: true
+  base_body: base
+  imu_ang_vel_sensor: imu_ang_vel
+  hold_gripper:
+    joint7: 0.044
+
+controlled_joints:
+  - FL_hip_joint
+  - FL_thigh_joint
+  - FL_calf_joint
+  - FR_hip_joint
+  - FR_thigh_joint
+  - FR_calf_joint
+  - RL_hip_joint
+  - RL_thigh_joint
+  - RL_calf_joint
+  - RR_hip_joint
+  - RR_thigh_joint
+  - RR_calf_joint
+  - joint1
+  - joint2
+  - joint3
+  - joint4
+  - joint5
+  - joint6
+
+disabled_joints:
+  - joint7
+  - joint8
+
+action_scale:
+  legs: 0.25
+  arm_joint1_to_joint6: 0.15
+
+default_joint_pos:
+  FR_hip_joint: -0.1
+  FR_thigh_joint: 0.8
+  FR_calf_joint: -1.5
+  FL_hip_joint: 0.1
+  FL_thigh_joint: 0.8
+  FL_calf_joint: -1.5
+  RR_hip_joint: -0.1
+  RR_thigh_joint: 1.0
+  RR_calf_joint: -1.5
+  RL_hip_joint: 0.1
+  RL_thigh_joint: 1.0
+  RL_calf_joint: -1.5
+  joint1: 0.0
+  joint2: 1.55
+  joint3: 0.95
+  joint4: 0.45
+  joint5: 0.0
+  joint6: 0.0
+
+deploy_checks:
+  - Verify controlled joint order matches training ACTION_ORDER.
+  - Apply default joint offsets before scaled policy action targets.
+  - Match command layout with training observations.
+  - Match observation normalization from the exported policy runner.
+  - Keep gripper joints fixed at their default open state.
